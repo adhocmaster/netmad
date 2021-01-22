@@ -3,7 +3,7 @@ class Packet:
     def __init__(self, id, sender, size:int=20, sentAt=0):
         self.id = id
         self.sender = sender
-        self.size = size # in bytes
+        self.size = size # in bytes. do not change as data in flight is calculated in KB
 
         self.receiver = None
         self.sentAt = sentAt # in ms

@@ -80,7 +80,7 @@ class Sender(ABC):
 
     def createPacketsForTimeStep(self, timeStep):
         
-        numberOfPackets = math.floor(timeStep * self.deliveryRate)  - math.floor((timeStep - 1) * self.deliveryRate)
+        numberOfPackets = self.getNumberOfPacketsToCreateForTimeStep(timeStep)
         return self.createPackets(numberOfPackets, sizeMin=20, sizeMax=20, sentAt=timeStep)
 
 
@@ -88,7 +88,7 @@ class Sender(ABC):
         packets = self.createPacketsForTimeStep(timeStep)
 
         if len(packets) == 0:
-            return
+            return 0
 
         if self.debug:
             logging.debug(f"Sender #{self.id} created and sent {len(packets)} packets at {timeStep}")
@@ -97,7 +97,8 @@ class Sender(ABC):
             raise Exception(f"sentAt is not the same as current timeStep")
 
         self.sendTo(packets, path)
-        pass
+        
+        return len(packets)
 
 
     def sendTo(self, packets, path: Path):
@@ -105,6 +106,11 @@ class Sender(ABC):
         pass
 
     
+    @abstractmethod
+    def getNumberOfPacketsToCreateForTimeStep(self, timeStep):
+        pass
+
+
     @abstractmethod
     def onACK(self, packet):
         pass

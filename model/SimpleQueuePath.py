@@ -7,28 +7,52 @@ class SimpleQueuePath(Path):
 
     def __init__(
                     self, 
-                    maxQsize = 1000000, 
+                    maxDataInflight=10000,
+                    maxQsize = 10000, 
                     avgTTL=20, noiseMax=20,
-                    debug = True
+                    debug=True
                 ):
-        super().__init__(PathType.SimpleQueue, avgTTL=avgTTL, noiseMax=noiseMax, debug=debug)
+        super().__init__(PathType.SimpleQueue, maxDataInflight=maxDataInflight, avgTTL=avgTTL, noiseMax=noiseMax, debug=debug)
         self.maxQsize = maxQsize
         self.queue = queue.Queue(maxsize=maxQsize)
-        self.pipe = {} # holds received packets with ttl
         self.timeStep = 0
         self.ackPackets = []
         
     
     def onIncomingPackets(self, packets):
         if self.debug:
-            logging.debug(f"SimpleQueuePath: {len(packets)} incoming packets")
+            logging.info(f"SimpleQueuePath: {len(packets)} incoming packets")
         for packet in packets:
-            self.updateTTL(packet)
-            self.addToPipe(packet)
+
+            if self.isPipeFull():
+                # add to queue if pipe is full
+                self.addToQueue(packet)
+            else:
+                # else, update ttl and add to pipe
+                self.updateTTL(packet)
+                self.addToPipe(packet)
         pass
     
     def onTimeStep(self, timeStep):
         self.ackPackets = self.getPacketsByTimeStep(timeStep)
+
+        # TODO get some from queue
+
+        self.tryFlushQueue(timeStep)
+
+
+    def tryFlushQueue(self, timeStep):
+        if self.isPipeFull() is False:
+            while self.queue.empty() is False:
+                packet = self.getFromQueue()
+                self.updateTTL(packet)
+                # adjust for waiting time
+                packet.ackAt = timeStep + packet.ttl
+                packet.ttl = packet.ackAt - packet.sentAt 
+                self.addToPipe(packet)
+                if self.isPipeFull() is True:
+                    break
+
 
 
     def getACKs(self):
@@ -40,16 +64,7 @@ class SimpleQueuePath(Path):
         for packets in self.pipe.values():
             s += len(packets)
         return s
-        
 
-    def getPacketsByTimeStep(self, timeStep):
-        existingPackets = self.pipe.get(timeStep, [])
-        self.pipe[timeStep] = [] # removing the packets
-
-        if self.debug and len(existingPackets) > 0:
-            logging.debug(f"SimpleQueuePath: receiving {len(existingPackets)} packets at {timeStep}")
-
-        return existingPackets
         
 
     def updateTTL(self, packet):
@@ -59,11 +74,6 @@ class SimpleQueuePath(Path):
         pass
 
     
-    def addToPipe(self, packet):
-        existingPackets = self.pipe.get(packet.ackAt, [])
-        existingPackets.append(packet)
-        self.pipe[packet.ackAt] = existingPackets
-        pass
 
     
     def addToQueue(self, packet):
@@ -78,7 +88,7 @@ class SimpleQueuePath(Path):
         try:
             return self.queue.get(block=False)
         except queue.Empty:
-            pass # queue is empty
+            return None
 
     
     def getQSize(self):
@@ -90,9 +100,5 @@ class SimpleQueuePath(Path):
         return self.queue.qsize()
 
     
-    def getPipeStats(self):
-        stats = {}
-        for timeStep in self.pipe:
-            if len(self.pipe[timeStep]) > 0:
-                stats[timeStep] = len(self.pipe[timeStep])
-        return stats
+    def isOverflowed(self):
+        return self.getQSize() >= self.maxQsize
