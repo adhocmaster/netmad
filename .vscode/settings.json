@@ -1,6 +1,5 @@
 {
     "python.pythonPath": "C:\\Users\\adhocmaster\\.conda\\envs\\opendrive\\python.exe",
-    "python.unitTest.cwd": "C:\\muktadir\\netmad\\netmad",
     "python.testing.unittestArgs": [
         "-v",
         "-s",

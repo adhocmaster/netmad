@@ -1,5 +1,6 @@
 from model.Sender import Sender
 from model.SenderType import SenderType
+import logging
 
 class NoobSender(Sender):
 
@@ -8,4 +9,7 @@ class NoobSender(Sender):
 
         
     def onACK(self, packet):
+
+        if self.debug:
+            logging.debug(f"{self.getName()}: got ack for packet {packet}")
         pass

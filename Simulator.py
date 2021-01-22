@@ -1,7 +1,10 @@
 from model.Sender import Sender
 from model.Path import Path
 from model.SimpleQueuePath import SimpleQueuePath
-
+from model.NoobSender import NoobSender
+import pprint
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 class Simulator:
 
@@ -9,8 +12,8 @@ class Simulator:
         self.senders = {}
         self.path = path
         self.nextSenderId = 1
+        self.pp = pprint.PrettyPrinter()
 
-    
     def createSenderId(self):
         senderId = self.nextSenderId
         self.nextSenderId += 1
@@ -28,6 +31,11 @@ class Simulator:
         self.validateEnv()
 
         for timeStep in range(1, timeMS + 1):
+            print(f"\n************Time step: {timeStep}*********")
+
+            # 0. onTimeStep # any prep work
+            self.path.onTimeStep(timeStep)
+
             # 1. receiveACKs
             ackPackets = self.path.getACKs()
             for packet in ackPackets:
@@ -35,9 +43,18 @@ class Simulator:
 
             # 2. sendPackets
             for sender in self.senders.values():
-                sender.createAndSendPackets(timeStep, self.path)
-        
+                sender.createAndSendPacketsForTimeStep(timeStep, self.path)
+
+            # 3. print stats
+            print(f"Packets in-flight: {self.path.getNumPacketInflight()}")
+            self.pp.pprint(self.path.getPipeStats())
+            print(f"Path queue size: {self.path.getQSize()}")
+
             
 
 if __name__ == "__main__":
-   simulator = Simulator(SimpleQueuePath())
+    simulator = Simulator(SimpleQueuePath(avgTTL=20, noiseMax=10))
+    deliveryRate = 5
+    sender = NoobSender(simulator.createSenderId(), deliveryRate)
+    simulator.senders[sender.id] = sender
+    simulator.run(100)

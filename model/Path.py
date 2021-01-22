@@ -4,10 +4,13 @@ from model.PathType import PathType
 
 class Path(ABC):
 
-    def __init__(self, pathType: PathType=PathType.SimpleQueue):
+    def __init__(self, pathType: PathType=PathType.SimpleQueue, avgTTL=20, noiseMax=20, debug=True):
         self.pathType = pathType
-        self.pipe = [] # max size of the pipe?
-        self.queue = []
+        self.pipe = None
+        self.queue = None
+        self.noiseMax = noiseMax # ms
+        self.avgTTL = avgTTL # ms
+        self.debug = debug
 
     
     @abstractmethod
@@ -17,4 +20,20 @@ class Path(ABC):
     @abstractmethod
     def getACKs(self):
         pass
+    
 
+    @abstractmethod
+    def onTimeStep(self, timeStep):
+        pass
+
+    @abstractmethod
+    def getPacketsByTimeStep(self, timeStep):
+        pass
+
+    @abstractmethod
+    def getQSize(self):
+        pass
+
+    @abstractmethod
+    def getNumPacketInflight(self):
+        pass

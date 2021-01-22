@@ -6,6 +6,7 @@ from model.SenderType import SenderType
 from model.Path import Path
 import math
 import numpy as np
+import logging
 
 class Sender(ABC):
 
@@ -28,7 +29,10 @@ class Sender(ABC):
         f"\tdebug: {self.debug} \n"
         )
         
-    
+    def getName(self):
+        return self.type.name + " #" + str(self.id)
+
+
     def createPacketIdFromNumber(self, packetNumber):
         return str(self.id) + "-" + str(packetNumber)
 
@@ -63,7 +67,10 @@ class Sender(ABC):
     
     def createPackets(self, numberOfPackets, sizeMin=20, sizeMax=40, sentAt=0):
 
-        size = np.random.rand(sizeMin, sizeMax)
+        size = sizeMin
+        if sizeMin < sizeMax:
+            size = np.random.randint(sizeMin, sizeMax)
+        
         ids = self.getNewPacketIds(numberOfPackets)
         packets = []
         for id in ids:
@@ -79,7 +86,18 @@ class Sender(ABC):
 
     def createAndSendPacketsForTimeStep(self, timeStep, path: Path):
         packets = self.createPacketsForTimeStep(timeStep)
+
+        if len(packets) == 0:
+            return
+
+        if self.debug:
+            logging.debug(f"Sender #{self.id} created and sent {len(packets)} packets at {timeStep}")
+
+        if packets[-1].sentAt != timeStep:
+            raise Exception(f"sentAt is not the same as current timeStep")
+
         self.sendTo(packets, path)
+        pass
 
 
     def sendTo(self, packets, path: Path):
