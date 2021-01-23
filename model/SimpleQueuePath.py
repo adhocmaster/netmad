@@ -33,10 +33,17 @@ class SimpleQueuePath(Path):
                 self.addToPipe(packet)
         pass
     
-    def onTimeStep(self, timeStep):
+    def onTimeStepStart(self, timeStep):
         self.ackPackets = self.getPacketsByTimeStep(timeStep)
         self.tryFlushQueue(timeStep)
 
+    def onTimeStepEnd(self, timeStep):
+        """To be called at the end of a timeStep
+
+        Args:
+            timeStep ([type]): [description]
+        """
+        pass
 
     def tryFlushQueue(self, timeStep):
         if self.isPipeFull() is False:

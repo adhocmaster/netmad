@@ -1,5 +1,6 @@
 import pandas as pd
 from model.Packet import Packet
+import numpy as np
 
 class AnalyzerTools:
 
@@ -38,11 +39,35 @@ class AnalyzerTools:
         return dfPackets.groupby(['sentAt']).mean()
 
     
-    def getStatsPerTimeStep(self, dfPackets:pd.DataFrame):
-        return dfPackets.groupby(['sentAt']).agg(
+    def getSenderStatsPerTimeStep(self, dfPackets:pd.DataFrame, simulatorStats):
+        """Stats for timeSteps in dfPackets only, it is discontinuous and have a lot of missing values.
+
+        Args:
+            dfPackets (pd.DataFrame): [description]
+            simulatorStats ([type]): [description]
+
+        Returns:
+            [pandas.DataFrame]: index = sentAt, Columns - avgTTL	minTTL	maxTTL	dataInFlight	dataInQueue
+        """
+
+        ttlDf = dfPackets.groupby(['sentAt']).agg(
             avgTTL = pd.NamedAgg(column = "ttl", aggfunc="mean"),
             minTTL = pd.NamedAgg(column = "ttl", aggfunc="min"),
             maxTTL = pd.NamedAgg(column = "ttl", aggfunc="max"),
         )
+        sentAtArray = ttlDf.index.array
+
+        dataInFlight = []
+        dataInQueue = []
+        for timeStep in sentAtArray:
+            dataInFlight.append(simulatorStats['dataInFlight'][timeStep])
+            dataInQueue.append(simulatorStats['dataInQueue'][timeStep])
+
+        ttlDf['dataInFlight'] = dataInFlight
+        ttlDf['dataInQueue'] = dataInQueue
+
+        return ttlDf
+
+
 
 

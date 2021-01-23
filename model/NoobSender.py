@@ -14,6 +14,25 @@ class NoobSender(Sender):
         # randomness
         return math.floor( num * np.random.uniform(0.5, 1.1))
         
+
+    def onTimeStepStart(self, timeStep):
+        """To be called at the beginning of a timeStep
+
+        Args:
+            timeStep ([type]): [description]
+        """
+        pass
+
+
+    def onTimeStepEnd(self, timeStep):
+        """To be called at the end of a timeStep
+
+        Args:
+            timeStep ([type]): [description]
+        """
+        pass
+    
+
     def onACK(self, packet):
 
         super().onACK(packet)

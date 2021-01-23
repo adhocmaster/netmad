@@ -76,7 +76,7 @@ class Path(ABC):
     @abstractmethod
     def getDataInFlightInKB(self):
         raise NotImplementedError()
-    
+
 
     @abstractmethod
     def getDataInQueueInKB(self):
@@ -90,9 +90,18 @@ class Path(ABC):
     def getACKs(self):
         pass
     
+    @abstractmethod
+    def onTimeStepEnd(self, timeStep):
+        """To be called at the end of a timeStep
+
+        Args:
+            timeStep ([type]): [description]
+        """
+        pass
+
 
     @abstractmethod
-    def onTimeStep(self, timeStep):
+    def onTimeStepStart(self, timeStep):
         """Must be called at the beginning of a timeStep
 
         Args:

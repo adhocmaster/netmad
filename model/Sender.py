@@ -18,7 +18,6 @@ class Sender(ABC):
         self.type = senderType
         self.deliveryRate = deliveryRate # per ms
         self.debug = debug
-        self.stats = {}
         self.ackedPackets = {}
     
     def __str__(self):
@@ -113,6 +112,23 @@ class Sender(ABC):
         self.ackedPackets = collections.OrderedDict(sorted(self.ackedPackets.items()))
 
     
+    @abstractmethod
+    def onTimeStepStart(self, timeStep):
+        """To be called at the beginning of a timeStep
+
+        Args:
+            timeStep ([type]): [description]
+        """
+        pass
+
+    @abstractmethod
+    def onTimeStepEnd(self, timeStep):
+        """To be called at the end of a timeStep
+
+        Args:
+            timeStep ([type]): [description]
+        """
+        pass
 
     
     def onFinish(self):
