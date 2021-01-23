@@ -6,21 +6,21 @@ import math
 class Path(ABC):
 
     def __init__(self, pathType: PathType=PathType.SimpleQueue,
-            maxDataInflight=1000.0,
+            maxDataInPipe=1000.0,
             avgTTL=20, noiseMax=20, debug=True):
         self.pathType = pathType
-        self.maxDataInflight = maxDataInflight # in Kilo Bytes
+        self.maxDataInPipe = maxDataInPipe # in Kilo Bytes
         self.pipe = {} # holds received packets with ttl
         self.queue = None
         self.noiseMax = noiseMax # ms
         self.avgTTL = avgTTL # ms
         self.debug = debug
 
-        self.dataInFlight = 0
+        self.dataInPipe = 0
     
     
     def isPipeFull(self):
-        return self.dataInFlight >= self.maxDataInflight
+        return self.dataInPipe >= self.maxDataInPipe
 
     def addToPipe(self, packet):
         if self.isPipeFull():
@@ -29,11 +29,19 @@ class Path(ABC):
         existingPackets.append(packet)
         self.pipe[packet.ackAt] = existingPackets
 
-        self.dataInFlight += packet.size / 1000
+        self.dataInPipe += packet.size / 1000
         return True
     
-    def getDataInFlightInKB(self):
-        return round(self.dataInFlight, 2)
+
+    
+    def getNumPacketInPipe(self):
+        s = 0
+        for packets in self.pipe.values():
+            s += len(packets)
+        return s
+
+    def getDataInPipeInKB(self):
+        return round(self.dataInPipe, 2)
 
 
     def getPacketsByTimeStep(self, timeStep):
@@ -53,7 +61,7 @@ class Path(ABC):
 
         # reduce data in flight
         for packet in existingPackets:
-            self.dataInFlight -= packet.size / 1000
+            self.dataInPipe -= packet.size / 1000
 
         return existingPackets
 
@@ -66,6 +74,15 @@ class Path(ABC):
 
 
     @abstractmethod
+    def getDataInFlightInKB(self):
+        raise NotImplementedError()
+    
+
+    @abstractmethod
+    def getDataInQueueInKB(self):
+        raise NotImplementedError()
+
+    @abstractmethod
     def onIncomingPackets(self, packets):
         pass
 
@@ -76,11 +93,16 @@ class Path(ABC):
 
     @abstractmethod
     def onTimeStep(self, timeStep):
+        """Must be called at the beginning of a timeStep
+
+        Args:
+            timeStep ([type]): [description]
+        """
         pass
 
 
     @abstractmethod
-    def getQSize(self):
+    def getQueueSize(self):
         pass
 
     @abstractmethod

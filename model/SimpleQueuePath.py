@@ -7,12 +7,12 @@ class SimpleQueuePath(Path):
 
     def __init__(
                     self, 
-                    maxDataInflight=10000,
+                    maxDataInPipe=10000,
                     maxQsize = 10000, 
                     avgTTL=20, noiseMax=20,
                     debug=True
                 ):
-        super().__init__(PathType.SimpleQueue, maxDataInflight=maxDataInflight, avgTTL=avgTTL, noiseMax=noiseMax, debug=debug)
+        super().__init__(PathType.SimpleQueue, maxDataInPipe=maxDataInPipe, avgTTL=avgTTL, noiseMax=noiseMax, debug=debug)
         self.maxQsize = maxQsize
         self.queue = queue.Queue(maxsize=maxQsize)
         self.timeStep = 0
@@ -35,15 +35,15 @@ class SimpleQueuePath(Path):
     
     def onTimeStep(self, timeStep):
         self.ackPackets = self.getPacketsByTimeStep(timeStep)
-
-        # TODO get some from queue
-
         self.tryFlushQueue(timeStep)
 
 
     def tryFlushQueue(self, timeStep):
         if self.isPipeFull() is False:
+            counter = 0
+            sizeQBeforeFlushing = self.getQueueSize()
             while self.queue.empty() is False:
+                counter += 1
                 packet = self.getFromQueue()
                 self.updateTTL(packet)
                 # adjust for waiting time
@@ -52,6 +52,8 @@ class SimpleQueuePath(Path):
                 self.addToPipe(packet)
                 if self.isPipeFull() is True:
                     break
+            if self.debug and counter > 0:
+                logging.info(f"SimpleQueuePath: #{counter} of {sizeQBeforeFlushing} packets were flushed to pipe from the queue")
 
 
 
@@ -60,20 +62,26 @@ class SimpleQueuePath(Path):
 
     
     def getNumPacketInflight(self):
-        s = 0
-        for packets in self.pipe.values():
-            s += len(packets)
-        return s
-
+        return self.getNumPacketInPipe() + self.getQueueSize()
         
 
     def updateTTL(self, packet):
         packet.ttlNoise = np.random.randint(0, self.noiseMax)
-        packet.ttl = math.floor( self.avgTTL + self.avgTTL * (self.getQSize() / self.maxQsize) + packet.ttlNoise )
+        packet.ttl = math.floor( self.avgTTL + self.avgTTL * (self.getQueueSize() / self.maxQsize) + packet.ttlNoise )
         packet.ackAt = packet.sentAt + packet.ttl
         pass
 
+
+    def getDataInFlightInKB(self):
+        return self.getDataInPipeInKB() + self.getDataInQueueInKB()
     
+    
+    def getDataInQueueInKB(self):
+        s = 0
+        for packet in self.queue.queue: # accessing underlying deque, so, items are not consumed
+            s += packet.size / 1000
+        return round(s, 2)
+
 
     
     def addToQueue(self, packet):
@@ -91,7 +99,7 @@ class SimpleQueuePath(Path):
             return None
 
     
-    def getQSize(self):
+    def getQueueSize(self):
         """[summary]
 
         Returns:
@@ -101,4 +109,4 @@ class SimpleQueuePath(Path):
 
     
     def isOverflowed(self):
-        return self.getQSize() >= self.maxQsize
+        return self.getQueueSize() >= self.maxQsize

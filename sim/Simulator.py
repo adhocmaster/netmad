@@ -34,8 +34,10 @@ class Simulator:
 
         self.validateEnv()
 
-        self.stats['packetsInFlight'] = []
         self.stats['dataInFlight'] = []
+        self.stats['dataInQueue'] = []
+        self.stats['packetsInFlight'] = []
+        self.stats['packetsInQueue'] = []
         self.stats['queueSize'] = []
         self.stats['packetsSent'] = []
         self.stats['packetsAcked'] = []
@@ -72,11 +74,12 @@ class Simulator:
             if timeStep % self.printStatFreq == 0:
                 self.stats['packetsInFlight'].append(self.path.getNumPacketInflight())
                 self.stats['dataInFlight'].append(self.path.getDataInFlightInKB())
-                self.stats['queueSize'].append(self.path.getQSize())
+                self.stats['packetsInQueue'].append(self.path.getQueueSize())
+                self.stats['dataInQueue'].append(self.path.getDataInQueueInKB())
                 logging.info(f"Packets in-flight: {self.path.getNumPacketInflight()}")
                 logging.info(f"Data in-flight: {self.path.getDataInFlightInKB()}KB")
                 # logging.info(self.pp.pformat(self.path.getPipeStats()))
-                logging.info(f"Path queue size: {self.path.getQSize()}")
+                logging.info(f"packetsInQueue: {self.path.getQueueSize()}")
 
             # 4. terminate early if path overflowed
             if self.path.isOverflowed():
