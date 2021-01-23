@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "C:\\Users\\adhocmaster\\.conda\\envs\\opendrive\\python.exe",
+    "python.pythonPath": "C:\\Users\\adhocmaster\\.conda\\envs\\network\\python.exe",
     "python.testing.unittestArgs": [
         "-v",
         "-s",

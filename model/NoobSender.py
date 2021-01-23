@@ -6,8 +6,8 @@ import numpy as np
 
 class NoobSender(Sender):
 
-    def __init__(self, id, deliveryRate):
-        super().__init__(id, SenderType.Noob, deliveryRate=deliveryRate)
+    def __init__(self, id, deliveryRate, debug=True):
+        super().__init__(id, SenderType.Noob, deliveryRate=deliveryRate, debug=debug)
 
     def getNumberOfPacketsToCreateForTimeStep(self, timeStep):
         num = math.floor(timeStep * self.deliveryRate)  - math.floor((timeStep - 1) * self.deliveryRate)
@@ -16,9 +16,10 @@ class NoobSender(Sender):
         
     def onACK(self, packet):
 
+        super().onACK(packet)
         # packet loss conditions:
         # 1. ACK out of order.
         # 2. 
         if self.debug:
-            logging.info(f"{self.getName()}: got ack for packet {packet}")
+            logging.info(f"{self.getName()}: got ack for packet {packet.getPacketNumber()}")
         pass

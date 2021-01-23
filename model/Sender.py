@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-import time
+import time, collections
 import threading
 from model.Packet import Packet
 from model.SenderType import SenderType
@@ -7,6 +7,7 @@ from model.Path import Path
 import math
 import numpy as np
 import logging
+import pandas as pd
 
 class Sender(ABC):
 
@@ -17,6 +18,8 @@ class Sender(ABC):
         self.type = senderType
         self.deliveryRate = deliveryRate # per ms
         self.debug = debug
+        self.stats = {}
+        self.ackedPackets = {}
     
     def __str__(self):
 
@@ -106,6 +109,17 @@ class Sender(ABC):
         pass
 
     
+    def finalizeStats(self):
+        self.ackedPackets = collections.OrderedDict(sorted(self.ackedPackets.items()))
+
+    
+
+    
+    def onFinish(self):
+        """To be called after simulation is finished
+        """
+        self.finalizeStats()
+    
     @abstractmethod
     def getNumberOfPacketsToCreateForTimeStep(self, timeStep):
         pass
@@ -113,6 +127,7 @@ class Sender(ABC):
 
     @abstractmethod
     def onACK(self, packet):
+        self.ackedPackets[packet.getPacketNumber()] = packet
         pass
 
 

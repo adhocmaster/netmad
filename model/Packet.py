@@ -12,6 +12,12 @@ class Packet:
         self.ttlNoise = 0 # in ms
         self.isDropped = False
 
+
+    def getPacketNumber(self):
+
+        idArr = self.id.split('-')
+        return idArr[1]
+        
     
     def __str__(self):
 

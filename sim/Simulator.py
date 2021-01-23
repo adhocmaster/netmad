@@ -4,17 +4,19 @@ from model.SimpleQueuePath import SimpleQueuePath
 from model.NoobSender import NoobSender
 import pprint
 import matplotlib.pyplot as plt
+import seaborn as sns
 import logging
 logging.basicConfig(level=logging.INFO)
 
 class Simulator:
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, printStatFreq=10):
         self.senders = {}
         self.path = path
         self.nextSenderId = 1
         self.pp = pprint.PrettyPrinter()
         self.stats = {}
+        self.printStatFreq = printStatFreq # print every printStatFreq time step
 
     def createSenderId(self):
         senderId = self.nextSenderId
@@ -43,7 +45,8 @@ class Simulator:
         totalPacketsAcked = 0
 
         for timeStep in range(1, timeMS + 1):
-            print(f"\n************Time step: {timeStep}*********")
+            if timeStep % self.printStatFreq == 0:
+                logging.info(f"\n************Time step: {timeStep}*********")
 
             # 0. onTimeStep # any prep work
             self.path.onTimeStep(timeStep)
@@ -65,35 +68,25 @@ class Simulator:
                 self.stats['totalPacketsSent'].append(totalPacketsSent)
 
             # 3. print stats
-            self.stats['packetsInFlight'].append(self.path.getNumPacketInflight())
-            self.stats['dataInFlight'].append(self.path.getDataInFlightInKB())
-            self.stats['queueSize'].append(self.path.getQSize())
-            print(f"Packets in-flight: {self.path.getNumPacketInflight()}")
-            print(f"Data in-flight: {self.path.getDataInFlightInKB()}KB")
-            self.pp.pprint(self.path.getPipeStats())
-            print(f"Path queue size: {self.path.getQSize()}")
+
+            if timeStep % self.printStatFreq == 0:
+                self.stats['packetsInFlight'].append(self.path.getNumPacketInflight())
+                self.stats['dataInFlight'].append(self.path.getDataInFlightInKB())
+                self.stats['queueSize'].append(self.path.getQSize())
+                logging.info(f"Packets in-flight: {self.path.getNumPacketInflight()}")
+                logging.info(f"Data in-flight: {self.path.getDataInFlightInKB()}KB")
+                # logging.info(self.pp.pformat(self.path.getPipeStats()))
+                logging.info(f"Path queue size: {self.path.getQSize()}")
 
             # 4. terminate early if path overflowed
             if self.path.isOverflowed():
-                print("Path overflowed. Terminating....")
+                logging.warn("Path overflowed. Terminating....")
                 break
+            pass
 
+        for sender in self.senders.values():
+            sender.onFinish()
+
+        pass
+    pass
             
-
-if __name__ == "__main__":
-    simulator = Simulator(SimpleQueuePath(avgTTL=20, noiseMax=20, maxDataInflight=10, maxQsize=100))
-    deliveryRate = 25
-    sender = NoobSender(simulator.createSenderId(), deliveryRate)
-    simulator.senders[sender.id] = sender
-    simulator.run(100)
-
-    plt.plot(simulator.stats['dataInFlight'], label="Data in flight")
-    plt.plot(simulator.stats['packetsInFlight'], label="Packet in flight")
-    plt.plot(simulator.stats['queueSize'], label="Queue size")
-    plt.plot(simulator.stats['packetsSent'], label="Packets Sent")
-    plt.plot(simulator.stats['packetsAcked'], label="Packet Acked")
-    plt.plot(simulator.stats['totalPacketsSent'], label="Total packets Sent")
-    plt.plot(simulator.stats['totalPacketsAcked'], label="Total packet Acked")
-    plt.title("Simulation stats")
-    plt.legend()
-    plt.show()
