@@ -70,5 +70,15 @@ The base class for Senders. Only the **public API** is documented here.
 
 # Path (Abstract)
 
+Path calculates the ttl for packets and releases the packets at (sentAt + ttl) timeStep.
+
+## SimpleQueuePath:
+
+Whenever a packet comes, it either adds a ttl value to the packet or keeps it in the queue depending on data in pipe. This path does not reflect TCP protocol.
+
+1. Does not ensure packet order in sending acknowledgements. 
+2. Does not check for packet order when receiving. 
+
 # AnalyzerTools
 
+## 
