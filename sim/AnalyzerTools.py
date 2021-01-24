@@ -1,6 +1,7 @@
 import pandas as pd
 from model.Packet import Packet
 import numpy as np
+import matplotlib.pyplot as plt
 
 class AnalyzerTools:
 
@@ -68,6 +69,17 @@ class AnalyzerTools:
 
         return ttlDf
 
+
+    def createPlotsAgainstDataInFlight(self, dfStats, figsize=(20,10)):
+        plt.figure(figsize=figsize)
+        plt.plot(dfStats['dataInFlight'], dfStats['avgTTL'], label="avg ttl")
+        plt.plot(dfStats['dataInFlight'], dfStats['maxTTL'], label="max ttl")
+        plt.plot(dfStats['dataInFlight'], dfStats['dataInQueue'], label="data In Queue")
+        plt.title("Simulation stats")
+        plt.xlabel("Data in flight KB")
+        plt.ylabel("ttl in ms")
+        plt.legend()
+        plt.show()
 
 
 
