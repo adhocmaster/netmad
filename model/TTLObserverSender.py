@@ -7,11 +7,12 @@ from collections import deque
 
 class TTLObserverSender(Sender):
 
-    def __init__(self, id, deliveryRate, debug=True, TTLWindowSize=5):
+    def __init__(self, id, deliveryRate, debug=True, TTLWindowSize=5, goalTTL=40, minDeliveryRate=5):
         super().__init__(id, SenderType.Noob, deliveryRate=deliveryRate, debug=debug)
         self.TTLWindowSize = TTLWindowSize
-        self.avgTTLLifeTime = None # a huge number in ms
-        self.avgTTLWindowTime = 999999
+        self.goalTTL = goalTTL # a huge number in ms
+        self.minDeliveryRate = minDeliveryRate
+        self.avgTTLWindowTime = 20
         self.TTLWindow = deque(maxlen=self.TTLWindowSize)
 
 
@@ -28,16 +29,24 @@ class TTLObserverSender(Sender):
             timeStep ([type]): [description]
         """
 
-        if len(self.TTLWindow) > 0:
-            self.avgTTLWindowTime = np.mean(self.TTLWindow)
-        
-        if self.avgTTLLifeTime > self.avgTTLWindowTime:
-            # we can increase
-            self.stepUpDeliveryRate()
-        elif self.avgTTLLifeTime < self.avgTTLWindowTime:
-            self.stepDownDeliveryRate()
+        self.adjustDeliveryRate(timeStep)
 
         pass
+
+    def adjustDeliveryRate(self, timeStep):
+
+        if timeStep % self.goalTTL != 0:
+            return
+
+        if len(self.TTLWindow) > 0:
+            self.avgTTLWindowTime = np.mean(self.TTLWindow)
+
+        if self.goalTTL > self.avgTTLWindowTime:
+            # we can increase
+            self.stepUpDeliveryRate()
+        elif self.goalTTL < self.avgTTLWindowTime:
+            self.stepDownDeliveryRate()
+
 
 
     def onTimeStepEnd(self, timeStep):
@@ -55,23 +64,37 @@ class TTLObserverSender(Sender):
         # packet loss conditions:
         # 1. ACK out of order.
         # 2. 
-        if self.debug:
-            logging.info(f"{self.getName()}: got ack for packet {packet.getPacketNumber()}")
+        # if self.debug:
+        #     logging.info(f"{self.getName()}: got ack for packet {packet.getPacketNumber()}")
 
-        if self.avgTTLLifeTime is None:
-            self.avgTTLLifeTime = packet.ttl
+        if self.goalTTL is None:
+            self.goalTTL = packet.ttl
         
         self.TTLWindow.append(packet.ttl)
         pass
 
 
     def stepUpDeliveryRate(self):
-        self.deliveryRate *=  (self.avgTTLLifeTime / self.avgTTLWindowTime)
-        self.avgTTLLifeTime = self.avgTTLWindowTime
+        if self.debug:
+            logging.info(f"TTLObserverSender:stepUpDeliveryRate avgTTLwindow {self.avgTTLWindowTime}")
+        self.deliveryRate *=  (self.goalTTL / self.avgTTLWindowTime)
+
+        if self.deliveryRate < self.minDeliveryRate:
+            self.deliveryRate = self.minDeliveryRate
+            
+        if self.debug:
+            logging.info(f"TTLObserverSender:stepUpDeliveryRate {self.deliveryRate}")
         pass
         
     def stepDownDeliveryRate(self):
-        self.deliveryRate *=  (self.avgTTLLifeTime / self.avgTTLWindowTime)
-        self.avgTTLLifeTime = self.avgTTLWindowTime
+        if self.debug:
+            logging.info(f"TTLObserverSender:stepDownDeliveryRate avgTTLwindow {self.avgTTLWindowTime}")
+        self.deliveryRate *=  (self.goalTTL / self.avgTTLWindowTime)
+
+        if self.deliveryRate < self.minDeliveryRate:
+            self.deliveryRate = self.minDeliveryRate
+
+        if self.debug:
+            logging.info(f"TTLObserverSender:stepDownDeliveryRate {self.deliveryRate}")
         pass
         
