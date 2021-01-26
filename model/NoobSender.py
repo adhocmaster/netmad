@@ -11,8 +11,12 @@ class NoobSender(Sender):
 
     def getNumberOfPacketsToCreateForTimeStep(self, timeStep):
         num = math.floor(timeStep * self.deliveryRate)  - math.floor((timeStep - 1) * self.deliveryRate)
+        # print(num)
         # randomness
-        return math.floor( num * np.random.uniform(0.5, 1.1))
+        # if self.debug:
+        #     logging.info(f"Sender #{self.id} creating {numberOfPackets} packets at {timeStep}")
+        # return math.floor( num * np.random.uniform(0.5, 1.1))
+        return num
         
 
     def onTimeStepStart(self, timeStep):
@@ -39,6 +43,6 @@ class NoobSender(Sender):
         # packet loss conditions:
         # 1. ACK out of order.
         # 2. 
-        if self.debug:
-            logging.info(f"{self.getName()}: got ack for packet {packet.getPacketNumber()}")
+        # if self.debug:
+        #     logging.info(f"{self.getName()}: got ack for packet {packet.getPacketNumber()}")
         pass

@@ -69,6 +69,7 @@ class Sender(ABC):
     
     def createPackets(self, numberOfPackets, sizeMin=20, sizeMax=40, sentAt=0):
 
+
         size = sizeMin
         if sizeMin < sizeMax:
             size = np.random.randint(sizeMin, sizeMax)
@@ -83,6 +84,8 @@ class Sender(ABC):
     def createPacketsForTimeStep(self, timeStep):
         
         numberOfPackets = self.getNumberOfPacketsToCreateForTimeStep(timeStep)
+        # if self.debug:
+        #     logging.info(f"Sender #{self.id} creating {numberOfPackets} packets at {timeStep}")
         return self.createPackets(numberOfPackets, sizeMin=20, sizeMax=20, sentAt=timeStep)
 
 
@@ -93,7 +96,7 @@ class Sender(ABC):
             return 0
 
         if self.debug:
-            logging.debug(f"Sender #{self.id} created and sent {len(packets)} packets at {timeStep}")
+            logging.info(f"Sender #{self.id} created and sent {len(packets)} packets at {timeStep}")
 
         if packets[-1].sentAt != timeStep:
             raise Exception(f"sentAt is not the same as current timeStep")

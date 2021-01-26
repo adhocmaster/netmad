@@ -15,6 +15,8 @@ class TTLObserverSender(Sender):
         self.avgTTLWindowTime = 20
         self.TTLWindow = deque(maxlen=self.TTLWindowSize)
 
+        self.previousTTL = 20
+
 
     def getNumberOfPacketsToCreateForTimeStep(self, timeStep):
         num = math.floor(timeStep * self.deliveryRate)  - math.floor((timeStep - 1) * self.deliveryRate)
@@ -40,12 +42,28 @@ class TTLObserverSender(Sender):
 
         if len(self.TTLWindow) > 0:
             self.avgTTLWindowTime = np.mean(self.TTLWindow)
+        
+        if self.previousTTL < self.avgTTLWindowTime:
+            # ttl is increasing
+            self.deliveryRate *= (self.previousTTL / (self.avgTTLWindowTime * 2))
 
-        if self.goalTTL > self.avgTTLWindowTime:
-            # we can increase
-            self.stepUpDeliveryRate()
-        elif self.goalTTL < self.avgTTLWindowTime:
-            self.stepDownDeliveryRate()
+            if self.deliveryRate < self.minDeliveryRate:
+                self.deliveryRate = self.minDeliveryRate
+            
+
+            if self.debug:
+                logging.info(f"TTLObserverSender:increasing ttl avgTTLwindow {self.avgTTLWindowTime}")
+                logging.info(f"TTLObserverSender:decreasing {self.deliveryRate}")
+        else:
+
+            if self.goalTTL > self.avgTTLWindowTime:
+                # we can increase
+                self.stepUpDeliveryRate()
+            elif self.goalTTL < self.avgTTLWindowTime:
+                self.stepDownDeliveryRate()
+
+        self.previousTTL = self.avgTTLWindowTime
+        
 
 
 
@@ -81,7 +99,7 @@ class TTLObserverSender(Sender):
 
         if self.deliveryRate < self.minDeliveryRate:
             self.deliveryRate = self.minDeliveryRate
-            
+
         if self.debug:
             logging.info(f"TTLObserverSender:stepUpDeliveryRate {self.deliveryRate}")
         pass

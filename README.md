@@ -48,7 +48,7 @@ The base class for Senders. Only the **public API** is documented here.
 
 ## Properties:
 1. **ackedPackets**: acknowledged packets per timeStep, keyed by timeSteps of the simulation. *Not* all the timeSteps has a key in this dictionary as it is only populated if an ack arrives at the sender
-2. **deliveryRate**: delivery rate of the sender. It may change over time.
+2. **deliveryRate**: delivery rate of the sender in packets. It may change over time.
 3. **nextPacketNumber**: next packet number, used to generate id for the next packet
 4. **lock**: used to generate next packet id. 
 
@@ -75,6 +75,9 @@ Path calculates the ttl for packets and releases the packets at (sentAt + ttl) t
 ## SimpleQueuePath:
 
 Whenever a packet comes, it either adds a ttl value to the packet or keeps it in the queue depending on data in pipe. This path does not reflect TCP protocol.
+
+### Assumptions:
+1. delivery rate is indirectly clamped by the length of the pipe (amount of data travelling)
 
 1. Does not ensure packet order in sending acknowledgements. 
 2. Does not check for packet order when receiving. 

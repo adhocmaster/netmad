@@ -20,22 +20,27 @@ class SimpleQueuePath(Path):
         
     
     def onIncomingPackets(self, packets):
+        """ It assumes infinite arrival and delivery rate. This method is called every time step for every sender seperately."""
         if self.debug:
-            logging.info(f"SimpleQueuePath: {len(packets)} incoming packets")
+            logging.info(f"SimpleQueuePath: {len(packets)} incoming packets from sender {packets[0].sender.id}")
         for packet in packets:
-
-            if self.isPipeFull():
-                # add to queue if pipe is full
-                self.addToQueue(packet)
-            else:
-                # else, update ttl and add to pipe
-                self.updateTTL(packet)
-                self.addToPipe(packet)
+            self.deliverOrEnqueuePacket(packet)
         pass
+    
+    def deliverOrEnqueuePacket(self, packet):
+        if self.isPipeFull():
+            # add to queue if pipe is full
+            self.addToQueue(packet)
+        else:
+            # else, update ttl and add to pipe
+            self.updateTTL(packet)
+            self.addToPipe(packet)
+        pass
+
     
     def onTimeStepStart(self, timeStep):
         self.ackPackets = self.getPacketsByTimeStep(timeStep)
-        self.tryFlushQueue(timeStep)
+        self.tryDeliveringFromQueue(timeStep) # assumes infinite delivery rate.
 
     def onTimeStepEnd(self, timeStep):
         """To be called at the end of a timeStep
@@ -45,22 +50,28 @@ class SimpleQueuePath(Path):
         """
         pass
 
-    def tryFlushQueue(self, timeStep):
+    def tryDeliveringFromQueue(self, timeStep, limit=None):
+        numDelivered = 0
         if self.isPipeFull() is False:
-            counter = 0
             sizeQBeforeFlushing = self.getQueueSize()
             while self.queue.empty() is False:
-                counter += 1
                 packet = self.getFromQueue()
                 self.updateTTL(packet)
                 # adjust for waiting time
                 packet.ackAt = timeStep + packet.ttl
                 packet.ttl = packet.ackAt - packet.sentAt 
                 self.addToPipe(packet)
+                numDelivered += 1
                 if self.isPipeFull() is True:
                     break
-            if self.debug and counter > 0:
-                logging.info(f"SimpleQueuePath: #{counter} of {sizeQBeforeFlushing} packets were flushed to pipe from the queue")
+                if limit is not None:
+                    if numDelivered >= limit:
+                        break
+
+            if self.debug and numDelivered > 0:
+                logging.info(f"SimpleQueuePath: #{numDelivered} of {sizeQBeforeFlushing} packets were flushed to pipe from the queue")
+
+        return numDelivered
 
 
 
