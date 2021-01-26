@@ -23,6 +23,10 @@ class BottleNeckPath(SimpleQueuePath):
         self.maxArrivalRate = math.floor(maxArrivalRate) # in packets for simplification. None if no restriction
         self.maxDeliveryRate = math.floor(maxDeliveryRate) # in packets for simplification. None if no restriction
         self.incomingPacketsInCurrentTimeStep = []
+
+        logging.info(f"Maximum data in pipe is around (maxDeliveryRate * avgPacketSize * avgTTL) = {(self.maxDeliveryRate * 30 * self.avgTTL) / 1000} KB" )
+        logging.info(f"Maximum data in flight can be around (pipe-data + queue-data) = {(self.maxDeliveryRate * 30 * self.avgTTL + self.maxQsize * 30) / 1000} KB" )
+        logging.info(f"Optimal data in flight = {(self.maxDeliveryRate * 30 * self.avgTTL) / 1000} KB" )
         pass
 
     def onTimeStepStart(self, timeStep):
