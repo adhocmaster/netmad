@@ -20,6 +20,9 @@ class BottleNeckPath(SimpleQueuePath):
         if maxDeliveryRate < 1:
             raise Exception("maxDeliveryRate less than 1 is not supported")
 
+        if maxArrivalRate < maxDeliveryRate:
+            logging.warning(f"path's maxArrivalRate is less than its maxDeliveryRate")
+
         self.maxArrivalRate = math.floor(maxArrivalRate) # in packets for simplification. None if no restriction
         self.maxDeliveryRate = math.floor(maxDeliveryRate) # in packets for simplification. None if no restriction
         self.incomingPacketsInCurrentTimeStep = []
